@@ -1,20 +1,5 @@
 require 'socket'
-
-class App
-  def call(_, path)
-    status = ["/hello", "/goodbye"].include?(path) ? "HTTP/1.1 200 OK" : "HTTP/1.1 404 Not Found"
-    headers = { "Content-Type" => "text/html" }
-    body = case path
-         when "/hello"
-            "<h1>Hello</h1>"
-         when "/goodbye"
-            "<h1>Goodbye</h1>"
-         else
-            "<h1>Not Found</h1>"
-         end
-    [status, headers, body]
-  end
-end
+require_relative "./app"
 
 app = App.new
 server = TCPServer.new(3000)
@@ -24,16 +9,20 @@ puts "サーバー起動中！！！！"
 loop do
   socket = server.accept
   request = socket.gets
-  method, path, _ = request.split
-  puts "#{method}, #{path}"
+  env = {}
+  env["REQUEST_METHOD"], env["PATH_INFO"], _ = request.split
+  status, headers, body = app.call(env)
+  reason = {
+    200 => "OK",
+    404 => "Not Found"
+  }[status] || "OK"
 
-  status, headers, body = app.call(method, path)
-
-  res = "#{status}\r\n" \
-        "#{headers}\r\n" \
+  header_lines = headers.map { |k, v| "#{k}: #{v}" }.join("\r\n")
+  res = "HTTP/1.1 #{status} #{reason}\r\n" \
+        "#{header_lines}\r\n" \
         "Content-Length: #{body.bytesize}\r\n" \
         "\r\n" \
-        "#{body}"
+        "#{body.join}"
 
   socket.print res
   socket.close
