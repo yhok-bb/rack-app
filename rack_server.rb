@@ -1,4 +1,6 @@
 require 'socket'
+require 'uri'
+require 'stringio'
 
 app_file = File.basename(ARGV[0], '.rb')
 require_relative "./#{app_file}"
@@ -22,7 +24,17 @@ loop do
   end
 
   env = {}
-  env["REQUEST_METHOD"], env["PATH_INFO"], _ = request.split
+  env["REQUEST_METHOD"], path_info, protocol = request.split
+  env["SERVER_PROTOCOL"] = protocol.strip
+
+  uri = URI.parse(path_info)
+  env["PATH_INFO"] = uri.path
+  env["QUERY_STRING"] = uri.query || ""  # nilの場合は空文字列
+  env["SERVER_NAME"] = "localhost"
+  env["rack.url_scheme"] = "http"
+  env["rack.errors"] = $stderr
+  env["rack.input"] = StringIO.new("") # 空のIOオブジェクト
+  puts env
   status, headers, body = app.call(env)
   reason = {
     200 => "OK",
