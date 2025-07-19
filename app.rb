@@ -1,5 +1,6 @@
 class App
   def call(env)
+    # raise "Test error" <- ShowExceptionsMiddlewareで捕捉される
     case env["PATH_INFO"]
     when "/hello"
       [200, { "content-type" => "text/html" }, ["<h1>Hello</h1>"]]
