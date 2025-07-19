@@ -3,14 +3,17 @@ require 'uri'
 require 'stringio'
 require_relative 'SimpleMiddleware'
 require_relative 'LoggerMiddleware'
+require_relative 'ShowExceptionsMiddleware'
 
 app_file = File.basename(ARGV[0], '.rb')
 require_relative "./#{app_file}"
 
 app_class = Object.const_get(File.basename(app_file, '.rb').capitalize)
+app = ShowExceptionsMiddleware.new(
   LoggerMiddleware.new(
       SimpleMiddleware.new(
         app_class.new
+    )
   )
       )
 
